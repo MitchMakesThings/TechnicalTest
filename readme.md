@@ -4,7 +4,7 @@ This is a technical assessment for a software developer.
 
 ### Scenario
 
-We have been approached by a startup to create a proof of concept for a banking system that will store customers, their bank accounts, and transfers. The startup has an existing mobile app in place, but wants to modernise their backend, moving into Microsoft’s Azure cloud with ASP.NET Core. They wish to use .NET 9, Entity Framework Core and connect to a SQL database. For development purposes, the startup wants to see a proof of concept using SQLite.
+We have been approached by a startup to create a proof of concept for a banking system that will store customers, their bank accounts, and transfers. The startup has an existing mobile app in place, but wants to modernise their backend, moving into Microsoft’s Azure cloud with ASP.NET Core. They wish to use .NET 10, Entity Framework Core and connect to a SQL database. For development purposes, the startup wants to see a proof of concept using SQLite.
 
 The company is looking to invest heavily into software and believe this project will form a backbone to the next decade of their business. Take this into consideration when forming an opinion of how and where to structure code. A future team of developers may work on the system at the same time, which will need architecture that lends itself to a team dynamic.
 
