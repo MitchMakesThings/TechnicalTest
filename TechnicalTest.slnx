@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="TechnicalTest.API/TechnicalTest.API.csproj" />
+  <Project Path="TechnicalTest.Data/TechnicalTest.Data.csproj" />
+</Solution>
