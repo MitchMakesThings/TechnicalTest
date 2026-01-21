@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TechnicalTest.API.Models;
 using TechnicalTest.Data;
+using TechnicalTest.Data.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,7 @@ app.MapPost("/customers/", async ([FromBody] AddCustomerModel customer, Applicat
     db.Customers.Add(new Customer
     {
         Name = customer.Name,
+        DailyLimit = 10_000
     });
 
     await db.SaveChangesAsync();
