@@ -22,7 +22,26 @@ public class AdminCustomersController(ICustomerAdminModule customerModule)
     public async Task<IResult> Add([FromBody] AddCustomerModel customer)
     {
         var created = await customerModule.Create(new CustomerModification(customer.Name, customer.DateOfBirth, customer.DailyLimit));
+        if (created.Success)
+        {
+            return Results.Ok(created.Result);
+        }
+        
+        // We could log errors to something like Sentry from here for anything particularly unusual (ie, mobile app shouldn't have allowed an empty Name, so log those errors here for follow up)
 
-        return Results.Ok(created);
+        var userFriendlyMessage = created.Errors?.Any(e => e == CustomerModificationError.NotFound) == true ? "Not found." : string.Empty;
+        userFriendlyMessage += created.Errors?.Any(e => e == CustomerModificationError.InvalidName) == true ? "Invalid name." : string.Empty;
+        userFriendlyMessage += created.Errors?.Any(e => e == CustomerModificationError.InvalidDateOfBirth) == true ? "Invalid date of birth." : string.Empty;
+        
+        return Results.Problem(new ProblemDetails()
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = "Customer Creation Failed",
+            Detail = userFriendlyMessage,
+            Extensions = new Dictionary<string, object>
+            {
+                ["errors"] = created.Errors ?? []
+            }!
+        });
     }
 }

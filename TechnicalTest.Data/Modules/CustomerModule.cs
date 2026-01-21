@@ -7,13 +7,13 @@ namespace TechnicalTest.Data.Modules;
 public interface ICustomerModule
 {
     Task<CustomerDto?> Get(int customerId);
-    Task<CustomerDto> Update(int id, CustomerModification newDetails);
-    Task Delete(int customerId);
+    Task<CustomerModificationResult> Update(int id, CustomerModification newDetails);
+    Task<CustomerModificationResult> Delete(int customerId);
 }
 
 public interface ICustomerAdminModule
 {
-    Task<CustomerDto> Create(CustomerModification details);
+    Task<CustomerModificationResult> Create(CustomerModification details);
     IAsyncEnumerable<CustomerDto> GetAll();
 }
 
@@ -44,7 +44,7 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
         return new CustomerDto(customer);
     }
 
-    public async Task<CustomerDto> Update(int id, CustomerModification newDetails)
+    public async Task<CustomerModificationResult> Update(int id, CustomerModification newDetails)
     {
         var existing = await _customerRepository
             .GetQueryable()
@@ -52,7 +52,7 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
 
         if (existing == null)
         {
-            throw new KeyNotFoundException($"Customer with id {id} not found");
+            return new CustomerModificationResult(false, [CustomerModificationError.NotFound]);
         }
 
         // Copy across the fields a customer should be able to update about themselves
@@ -65,11 +65,27 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
         }
 
         await _customerRepository.SaveChangesAsync();
-        return new CustomerDto(existing);
+        return new CustomerModificationResult(true, null, new CustomerDto(existing));
     }
 
-    public async Task<CustomerDto> Create(CustomerModification details)
+    public async Task<CustomerModificationResult> Create(CustomerModification details)
     {
+        var errors = new List<CustomerModificationError>();
+        if (String.IsNullOrWhiteSpace(details.Name))
+        {
+            errors.Add(CustomerModificationError.InvalidName);
+        }
+
+        if (details.DateOfBirth is null)
+        {
+            errors.Add(CustomerModificationError.InvalidDateOfBirth);
+        }
+
+        if (errors.Any())
+        {
+            return new CustomerModificationResult(false, errors.ToArray());
+        }
+        
         var customer = new Customer()
         {
             Name = details.Name ?? throw new InvalidOperationException(),
@@ -81,26 +97,46 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
         await _customerRepository.SaveChangesAsync();
 
         // Re-fetch so retrieving customer details always goes through a single codepath (Also ensures any EF behind the scenes magic gets picked up)
-        return await Get(created.Id) ??  throw new InvalidOperationException("Customer creation ended with customer not found");
+        var createdCustomer = await Get(created.Id);
+        if (createdCustomer is null)
+        {
+            return new CustomerModificationResult(false, [CustomerModificationError.NotFound]);
+        }
+
+        return new CustomerModificationResult(true, null, createdCustomer);
     }
 
-    public async Task Delete(int customerId)
+    public async Task<CustomerModificationResult> Delete(int customerId)
     {
         var customer = await _customerRepository.GetQueryable().SingleOrDefaultAsync(c => c.Id == customerId);
-        if (customer is null) throw new KeyNotFoundException($"Customer with id {customerId} not found");
+        if (customer is null)
+        {
+            return new CustomerModificationResult(false, [CustomerModificationError.NotFound]);
+        }
         
         // In the world of finance there is no deleted, only hidden. We'll soft-delete the customer, and our repositories will stop returning them.
         // Future development could add ISoftDeletedRepositories that also return soft-deleted records, for investigations/audits etc
         customer.DeletedAt = DateTime.UtcNow;
         await _customerRepository.SaveChangesAsync();
+
+        return new CustomerModificationResult(true);
     }
 }
+
+public enum CustomerModificationError
+{
+    NotFound,
+    InvalidName,
+    InvalidDateOfBirth,
+
+};
+public record CustomerModificationResult(bool Success, CustomerModificationError[]? Errors = null, CustomerDto? Result = null);
 
 public record CustomerModification(string? Name, DateOnly? DateOfBirth, decimal? DailyLimit);
 
 public record CustomerDto(string Name, DateOnly DateOfBirth, decimal DailyLimit)
 {
-    public CustomerDto(Customer Customer) : this(Customer.Name, Customer.DateOfBirth, Customer.DailyLimit)
+    public CustomerDto(Customer customer) : this(customer.Name, customer.DateOfBirth, customer.DailyLimit)
     {
     }
 
