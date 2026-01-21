@@ -7,6 +7,7 @@ public class ApplicationContext : DbContext
 {
     public DbSet<Customer> Customers { get; set; } = null!;
     public DbSet<BankAccount> BankAccounts { get; set; } = null!;
+    public DbSet<Transaction> Transactions { get; set; } = null!;
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

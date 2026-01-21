@@ -12,5 +12,5 @@ public class BankAccount : BaseEntity
     public Customer? Customer { get; set; }
     
     public DateTimeOffset? FrozenAt { get; set; }
-    public decimal Balance { get; set; }
+    public decimal Balance { get; set; } // It is assumed some daily/regular reconciliation process will check/update this instead of summing the complete history of transactions
 }
