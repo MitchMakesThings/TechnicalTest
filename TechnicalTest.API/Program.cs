@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TechnicalTest.API.Models;
 using TechnicalTest.Data;
-using TechnicalTest.Data.Models;
+using TechnicalTest.Data.Modules;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +11,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApplicationContext>();
+builder.Services.AddTechnicalTestDataServices();
 
 var app = builder.Build();
 
@@ -34,27 +35,18 @@ app.MapControllers();
 
 app.MapGet("/", () => "Hello world");
 
-app.MapPost("/customers/", async ([FromBody] AddCustomerModel customer, ApplicationContext db) =>
+app.MapPost("/admin/customers/", async ([FromBody] AddCustomerModel customer, ICustomerAdminModule customerModule) =>
 {
-    db.Customers.Add(new Customer
-    {
-        Name = customer.Name,
-        DailyLimit = 10_000
-    });
+    // TODO presumably an endpoint like this would be in a separate admin-only API with it's own authentication for bank staff
+    // We're ignoring these problems for a small-scale tech test
+    var created = await customerModule.Create(new CustomerModification(customer.Name, customer.DateOfBirth, customer.DailyLimit));
 
-    await db.SaveChangesAsync();
-
-    return Results.Ok();
+    return Results.Ok(created);
 });
 
-app.MapGet("/customers/", (ApplicationContext db) =>
+app.MapGet("/admin/customers/", async (ICustomerAdminModule customerModule) =>
 {
-    var customers = db.Customers
-        .Select(x => new
-        {
-            x.Id,
-            x.Name
-        }).ToList();
+    var customers =  customerModule.GetAll();
 
     return Results.Ok(customers);
 });
