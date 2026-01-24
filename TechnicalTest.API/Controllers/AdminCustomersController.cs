@@ -23,7 +23,7 @@ public class AdminCustomersController(ICustomerAdminModule customerModule, Admin
     }
 
     [HttpPost]
-    public async Task<ActionResult> Add([FromBody] CustomerModificationDto customer)
+    public async Task<ActionResult> Add([FromBody] CustomerCreationDto customer)
     {
         var created = await customerModule.Create(customer);
         if (!created.Success)

@@ -11,38 +11,11 @@ public interface ICustomerModule
     Task<CustomerModificationResult> Update(int id, CustomerModificationDto newDetails);
 }
 
-public interface ICustomerAdminModule
+public class CustomerModule(IRepository<Customer> customerRepository) : ICustomerModule
 {
-    Task<CustomerModificationResult> Create(CustomerModificationDto details);
-    IAsyncEnumerable<CustomerDto> GetAll();
-    Task<bool> Exists(int customerId);
-    Task<CustomerModificationResult> Delete(int customerId);
-}
-
-public class CustomerModule(IRepository<Customer> customerRepository) : ICustomerModule, ICustomerAdminModule
-{
-    private readonly IRepository<Customer> _customerRepository = customerRepository;
-
-    public IAsyncEnumerable<CustomerDto> GetAll()
-    {
-        return _customerRepository
-            .GetQueryable()
-            .Include(c => c.BankAccounts)
-            .AsNoTrackingWithIdentityResolution()
-            .Select(c => new CustomerDto(c))
-            .AsAsyncEnumerable();
-    }
-
-    public Task<bool> Exists(int customerId)
-    {
-        return _customerRepository
-            .GetQueryable()
-            .AnyAsync(c => c.Id == customerId);
-    }
-
     public async Task<CustomerDto?> Get(int customerId)
     {
-        var customer = await _customerRepository
+        var customer = await customerRepository
             .GetQueryable()
             .Include(c => c.BankAccounts)
             .AsNoTrackingWithIdentityResolution()
@@ -55,7 +28,7 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
 
     public async Task<CustomerModificationResult> Update(int id, CustomerModificationDto newDetails)
     {
-        var existing = await _customerRepository
+        var existing = await customerRepository
             .GetQueryable()
             .SingleOrDefaultAsync(c => c.Id == id);
 
@@ -78,67 +51,8 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
             // TODO trigger the klaxon and get an auditor looking at this person ASAP
         }
 
-        await _customerRepository.SaveChangesAsync();
+        await customerRepository.SaveChangesAsync();
         return new CustomerModificationResult(true, null, new CustomerDto(existing));
-    }
-
-    public async Task<CustomerModificationResult> Create(CustomerModificationDto details)
-    {
-        var errors = new List<CustomerModificationError>();
-        if (String.IsNullOrWhiteSpace(details.Name))
-        {
-            errors.Add(CustomerModificationError.InvalidName);
-        }
-
-        if (details.DateOfBirth is null)
-        {
-            errors.Add(CustomerModificationError.InvalidDateOfBirth);
-        }
-
-        if (details.DailyLimit < 0)
-        {
-            errors.Add(CustomerModificationError.InvalidDailyLimit);
-        }
-
-        if (errors.Any())
-        {
-            return new CustomerModificationResult(false, errors.ToArray());
-        }
-        
-        var customer = new Customer()
-        {
-            Name = details.Name ?? throw new InvalidOperationException(),
-            DateOfBirth = details.DateOfBirth ?? throw new InvalidOperationException(),
-            DailyLimit = details.DailyLimit ?? 1_000 // Some sort of company-defined sensible default
-        };
-        
-        var created = await _customerRepository.AddAsync(customer);
-        await _customerRepository.SaveChangesAsync();
-
-        // Re-fetch so retrieving customer details always goes through a single code-path (Also ensures any EF behind the scenes magic gets picked up)
-        var createdCustomer = await Get(created.Id);
-        if (createdCustomer is null)
-        {
-            return new CustomerModificationResult(false, [CustomerModificationError.NotFound]);
-        }
-
-        return new CustomerModificationResult(true, null, createdCustomer);
-    }
-
-    public async Task<CustomerModificationResult> Delete(int customerId)
-    {
-        var customer = await _customerRepository.GetQueryable().SingleOrDefaultAsync(c => c.Id == customerId);
-        if (customer is null)
-        {
-            return new CustomerModificationResult(false, [CustomerModificationError.NotFound]);
-        }
-        
-        // In the world of finance there is no deleted, only hidden. We'll soft-delete the customer, and our repositories will stop returning them.
-        // Future development could add ISoftDeletedRepositories that also return soft-deleted records, for investigations/audits etc
-        customer.DeletedAt = DateTime.UtcNow;
-        await _customerRepository.SaveChangesAsync();
-
-        return new CustomerModificationResult(true);
     }
 }
 
