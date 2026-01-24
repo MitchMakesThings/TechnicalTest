@@ -22,6 +22,10 @@ public class ApplicationContext : DbContext
         modelBuilder.Entity<BankAccount>()
             .HasAlternateKey(a => a.AccountNumber);
 
+        modelBuilder.Entity<Transaction>()
+            .HasOne(t => t.DebitBankAccount)
+            .WithMany(b => b.DebitTransactions);
+
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (entityType.ClrType.BaseType != typeof(BaseEntity))
