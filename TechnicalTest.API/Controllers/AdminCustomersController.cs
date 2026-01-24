@@ -1,47 +1,71 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TechnicalTest.API.Authentication;
 using TechnicalTest.API.Models;
 using TechnicalTest.Data.Modules;
 
 namespace TechnicalTest.API.Controllers;
 
-// TODO presumably an endpoint like this would be in a separate admin-only API with it's own authentication for bank staff
-// We're ignoring these problems for a small-scale tech test
+// ASSUMPTION: I'm working to the assumption that these endpoints wouldn't be accessed via the (presumably) client-facing mobile app. Ideally these endpoints would run from a separate admin-only service, with it's own authentication etc (And ideally not on the public internet!)
+// Either way, I would expect something like [Authorize(Policy = Policies.IsBankStaff)] applied to this controller
 [ApiController]
+[AllowAnonymous] // In the worst twist imaginable, for the tech test I'm making _admin_ stuff open to all, while regular endpoints require authentication!
 [Route("api/admin/customers")]
-public class AdminCustomersController(ICustomerAdminModule customerModule)
+public class AdminCustomersController(ICustomerAdminModule customerModule, AdminJwtManager adminJwtManager) : ControllerBase
 {
     [HttpGet]
-    public Task<IResult> GetAll()
+    public Task<ActionResult> GetAll()
     {
         var customers =  customerModule.GetAll();
 
-        return Task.FromResult(Results.Ok(customers));
+        return Task.FromResult<ActionResult>(Ok(customers));
     }
 
     [HttpPost]
-    public async Task<IResult> Add([FromBody] AddCustomerModel customer)
+    public async Task<ActionResult> Add([FromBody] AddCustomerModel customer)
     {
         var created = await customerModule.Create(new CustomerModification(customer.Name, customer.DateOfBirth, customer.DailyLimit));
-        if (created.Success)
+        if (!created.Success)
         {
-            return Results.Ok(created.Result);
+            // We could log errors to something like Sentry from here for anything particularly unusual (ie, mobile app shouldn't have allowed an empty Name, so log those errors here for follow up)
+
+            var userFriendlyMessage = created.Errors?.Any(e => e == CustomerModificationError.NotFound) == true ? "Not found." : string.Empty;
+            userFriendlyMessage += created.Errors?.Any(e => e == CustomerModificationError.InvalidName) == true ? "Invalid name." : string.Empty;
+            userFriendlyMessage += created.Errors?.Any(e => e == CustomerModificationError.InvalidDateOfBirth) == true ? "Invalid date of birth." : string.Empty;
+        
+            return Problem(
+                userFriendlyMessage, 
+                "/api/admin/customers", 
+                StatusCodes.Status400BadRequest, 
+                "Customer Creation Failed", 
+                extensions: new Dictionary<string, object>
+                {
+                    ["errors"] = created.Errors ?? []
+                }!
+            );
         }
         
-        // We could log errors to something like Sentry from here for anything particularly unusual (ie, mobile app shouldn't have allowed an empty Name, so log those errors here for follow up)
+        return Ok(created.Result);
+    }
 
-        var userFriendlyMessage = created.Errors?.Any(e => e == CustomerModificationError.NotFound) == true ? "Not found." : string.Empty;
-        userFriendlyMessage += created.Errors?.Any(e => e == CustomerModificationError.InvalidName) == true ? "Invalid name." : string.Empty;
-        userFriendlyMessage += created.Errors?.Any(e => e == CustomerModificationError.InvalidDateOfBirth) == true ? "Invalid date of birth." : string.Empty;
-        
-        return Results.Problem(new ProblemDetails()
+    // ASSUMPTION: We'd really have a proper login method that customers would use.
+    // To save myself time for the tech test though I've left account management out of scope.
+    // My default approach would be to use ASP.NET Core Identity.
+    // For demonstration of how authentication could work on the customer-facing endpoints I've included this convenience method to generate JWTs.
+    [HttpPost("{customerId:int}")]
+    public async Task<ActionResult> Login(int customerId)
+    {
+        if (!await customerModule.Exists(customerId))
         {
-            Status = StatusCodes.Status400BadRequest,
-            Title = "Customer Creation Failed",
-            Detail = userFriendlyMessage,
-            Extensions = new Dictionary<string, object>
-            {
-                ["errors"] = created.Errors ?? []
-            }!
-        });
+            return NotFound();
+        }
+
+        var claims = new Claim[]
+        {
+            new(Claims.CustomerId, customerId.ToString()),
+        };
+        
+        return Ok(adminJwtManager.GenerateJwt(claims));
     }
 }

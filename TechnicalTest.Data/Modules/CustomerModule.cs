@@ -15,6 +15,7 @@ public interface ICustomerAdminModule
 {
     Task<CustomerModificationResult> Create(CustomerModification details);
     IAsyncEnumerable<CustomerDto> GetAll();
+    Task<bool> Exists(int customerId);
 }
 
 public class CustomerModule(IRepository<Customer> customerRepository) : ICustomerModule, ICustomerAdminModule
@@ -30,7 +31,14 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
             .Select(c => new CustomerDto(c))
             .AsAsyncEnumerable();
     }
-    
+
+    public Task<bool> Exists(int customerId)
+    {
+        return _customerRepository
+            .GetQueryable()
+            .AnyAsync(c => c.Id == customerId);
+    }
+
     public async Task<CustomerDto?> Get(int customerId)
     {
         var customer = await _customerRepository
@@ -134,9 +142,9 @@ public record CustomerModificationResult(bool Success, CustomerModificationError
 
 public record CustomerModification(string? Name, DateOnly? DateOfBirth, decimal? DailyLimit);
 
-public record CustomerDto(string Name, DateOnly DateOfBirth, decimal DailyLimit)
+public record CustomerDto(int Id, string Name, DateOnly DateOfBirth, decimal DailyLimit)
 {
-    public CustomerDto(Customer customer) : this(customer.Name, customer.DateOfBirth, customer.DailyLimit)
+    public CustomerDto(Customer customer) : this(customer.Id, customer.Name, customer.DateOfBirth, customer.DailyLimit)
     {
     }
 
