@@ -14,9 +14,12 @@ public static class ServiceCollectionExtensions
             .AddScoped<IRepository<Customer>, CustomerRepository>()
             .AddScoped<IRepository<Transaction>, TransactionRepository>();
         
+        services.AddScoped<IDatabaseTransactionHelper, DatabaseTransactionHelper>();
+        
         services.AddScoped<ICustomerModule, CustomerModule>()
             .AddScoped<ICustomerAdminModule, CustomerAdminModule>()
-            .AddScoped<IBankAccountModule, BankAccountModule>();
+            .AddScoped<IBankAccountModule, BankAccountModule>()
+            .AddScoped<IBankAccountAdminModule, BankAccountAdminModule>();
         
         return services;
     }

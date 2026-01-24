@@ -13,7 +13,11 @@ public interface ICustomerAdminModule
     Task<CustomerModificationResult> Delete(int customerId);
 }
 
-public class CustomerAdminModule(IRepository<Customer> customerRepository, ICustomerModule customerModule) : ICustomerAdminModule
+public class CustomerAdminModule(
+    IRepository<Customer> customerRepository, 
+    ICustomerModule customerModule, 
+    IBankAccountAdminModule bankAccountAdminModule,
+    IDatabaseTransactionHelper transactionHelper) : ICustomerAdminModule
 {
     public async Task<CustomerModificationResult> Create(CustomerCreationDto details)
     {
@@ -38,6 +42,9 @@ public class CustomerAdminModule(IRepository<Customer> customerRepository, ICust
             return new CustomerModificationResult(false, errors.ToArray());
         }
         
+        // Wrap in transaction, as the initial bank account needs to be created for any money to flow into the system
+        await using var transaction = await transactionHelper.BeginTransaction();
+        
         var customer = new Customer()
         {
             Name = details.Name ?? throw new InvalidOperationException(),
@@ -47,6 +54,16 @@ public class CustomerAdminModule(IRepository<Customer> customerRepository, ICust
         
         var created = await customerRepository.AddAsync(customer);
         await customerRepository.SaveChangesAsync();
+        
+        // Create the initial bank account, with the specified balance. This is the only way new money flows into the system, as the prototype doesn't have cross-customer/bank transactions!
+        var result = await bankAccountAdminModule.Create(created.Id, details.InitialBalance);
+        if (!result.Success)
+        {
+            throw new Exception(
+                "Couldn't create initial bank account. This is a game-over scenario! Explode and spam logs");
+        }
+
+        await transaction.CommitAsync();
 
         // Re-fetch so retrieving customer details always goes through a single code-path (Also ensures any EF behind the scenes magic gets picked up)
         var createdCustomer = await customerModule.Get(created.Id);
