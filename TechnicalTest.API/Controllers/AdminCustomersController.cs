@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TechnicalTest.API.Authentication;
 using TechnicalTest.Data.Modules;
+using TechnicalTest.Data.Modules.DTOs;
 
 namespace TechnicalTest.API.Controllers;
 

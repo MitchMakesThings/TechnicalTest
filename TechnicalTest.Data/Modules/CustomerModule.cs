@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TechnicalTest.Data.Models;
+using TechnicalTest.Data.Modules.DTOs;
 using TechnicalTest.Data.Repositories;
 
 namespace TechnicalTest.Data.Modules;
@@ -150,13 +151,3 @@ public enum CustomerModificationError
 
 };
 public record CustomerModificationResult(bool Success, CustomerModificationError[]? Errors = null, CustomerDto? Customer = null);
-
-public record CustomerModificationDto(string? Name, DateOnly? DateOfBirth, decimal? DailyLimit);
-
-public record CustomerDto(int Id, string Name, DateOnly DateOfBirth, decimal DailyLimit)
-{
-    public CustomerDto(Customer customer) : this(customer.Id, customer.Name, customer.DateOfBirth, customer.DailyLimit)
-    {
-    }
-
-} // TODO BankAccountDto[]

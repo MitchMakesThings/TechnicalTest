@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using TechnicalTest.Data.Modules;
+using TechnicalTest.Data.Modules.DTOs;
 
 namespace TechnicalTest.API.Controllers;
 
