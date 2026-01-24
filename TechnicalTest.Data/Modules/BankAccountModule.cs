@@ -10,7 +10,7 @@ public interface IBankAccountModule
 {
     Task<IEnumerable<AccountDto>> Get(int customerId);
     Task<BankAccountModificationResult> Create(int customerId);
-    Task<BankAccountModificationResult> Freeze(int customerId, int accountId);
+    Task<BankAccountModificationResult> Update(int customerId, int accountId, AccountDto updatedAccount);
     Task<BankAccountModificationResult> Delete(int customerId, int accountId);
 }
 
@@ -72,13 +72,7 @@ public class BankAccountModule(IRepository<BankAccount> bankAccountRepository) :
         return account;
     }
 
-    public Task<BankAccountModificationResult> Update(int customerId, int accountId)
-    {
-        // TODO - admin-level endpoint to support updating the balance?
-        throw new NotImplementedException();
-    }
-
-    public async Task<BankAccountModificationResult> Freeze(int customerId, int accountId)
+    public async Task<BankAccountModificationResult> Update(int customerId, int accountId, AccountDto updatedAccount)
     {
         var account = await bankAccountRepository.GetQueryable().SingleOrDefaultAsync(a => a.CustomerId == customerId && a.Id == accountId);
         if (account == null)
@@ -86,13 +80,18 @@ public class BankAccountModule(IRepository<BankAccount> bankAccountRepository) :
             return new BankAccountModificationResult(false, [BankAccountModificationError.NotFound]);
         }
 
-        if (account.FrozenAt.HasValue)
+        // Update the relevant fields, at this point that's just the frozen flag.
+        if (updatedAccount.Frozen)
         {
-            // Don't update the frozen date, just return the existing frozen account
-            return new BankAccountModificationResult(true, Account: new AccountDto(account));
+            // If the account was already frozen we should keep the existing date.
+            account.FrozenAt ??= DateTime.UtcNow;
         }
-        account.FrozenAt = DateTime.UtcNow;
-        await bankAccountRepository.SaveChangesAsync();
+        else
+        {
+            account.FrozenAt = null;
+        }
+        
+        await  bankAccountRepository.SaveChangesAsync();
         
         return new BankAccountModificationResult(true, Account: new AccountDto(account));
     }

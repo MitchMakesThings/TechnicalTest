@@ -31,6 +31,23 @@ public class AccountsController(IBankAccountModule accountModule) : BaseControll
         return Ok(result.Account);
     }
 
+    [HttpPut("{accountId:int}")]
+    public async Task<ActionResult<AccountDto>> UpdateAccount(int accountId, [FromBody]AccountDto updatedAccount)
+    {
+        var result = await accountModule.Update(CustomerId, accountId, updatedAccount);
+        if (!result.Success)
+        {
+            if (result.Errors?.Contains(BankAccountModificationError.NotFound) == true)
+            {
+                return NotFound();
+            }
+            
+            return Problem("An unknown error occurred",  null, StatusCodes.Status500InternalServerError);
+        }
+
+        return result.Account!;
+    }
+
     [HttpDelete("{accountId:int}")]
     public async Task<ActionResult<IEnumerable<AccountDto>>> DeleteAccount(int accountId)
     {
