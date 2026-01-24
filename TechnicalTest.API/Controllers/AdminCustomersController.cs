@@ -2,7 +2,6 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TechnicalTest.API.Authentication;
-using TechnicalTest.API.Models;
 using TechnicalTest.Data.Modules;
 
 namespace TechnicalTest.API.Controllers;
@@ -23,16 +22,16 @@ public class AdminCustomersController(ICustomerAdminModule customerModule, Admin
     }
 
     [HttpPost]
-    public async Task<ActionResult> Add([FromBody] AddCustomerModel customer)
+    public async Task<ActionResult> Add([FromBody] CustomerModificationDto customer)
     {
-        var created = await customerModule.Create(new CustomerModification(customer.Name, customer.DateOfBirth, customer.DailyLimit));
+        var created = await customerModule.Create(customer);
         if (!created.Success)
         {
             // We could log errors to something like Sentry from here for anything particularly unusual (ie, mobile app shouldn't have allowed an empty Name, so log those errors here for follow up)
 
-            var userFriendlyMessage = created.Errors?.Any(e => e == CustomerModificationError.NotFound) == true ? "Not found." : string.Empty;
-            userFriendlyMessage += created.Errors?.Any(e => e == CustomerModificationError.InvalidName) == true ? "Invalid name." : string.Empty;
-            userFriendlyMessage += created.Errors?.Any(e => e == CustomerModificationError.InvalidDateOfBirth) == true ? "Invalid date of birth." : string.Empty;
+            var userFriendlyMessage = created.Errors?.Contains(CustomerModificationError.NotFound) == true ? "Not found." : string.Empty;
+            userFriendlyMessage += created.Errors?.Contains(CustomerModificationError.InvalidName) == true ? "Invalid name." : string.Empty;
+            userFriendlyMessage += created.Errors?.Contains(CustomerModificationError.InvalidDateOfBirth) == true ? "Invalid date of birth." : string.Empty;
         
             return Problem(
                 userFriendlyMessage, 
@@ -46,7 +45,23 @@ public class AdminCustomersController(ICustomerAdminModule customerModule, Admin
             );
         }
         
-        return Ok(created.Result);
+        return Ok(created.Customer);
+    }
+
+    [HttpDelete("{customerId:int}")]
+    public async Task<ActionResult> Delete(int customerId)
+    {
+        var result = await customerModule.Delete(customerId);
+        if (!result.Success)
+        {
+            if (result.Errors?.Contains(CustomerModificationError.NotFound) == true)
+            {
+                return NotFound();
+            }
+            return Problem("Failed to delete customer", statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        return Ok();
     }
 
     // ASSUMPTION: We'd really have a proper login method that customers would use.

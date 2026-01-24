@@ -7,15 +7,15 @@ namespace TechnicalTest.Data.Modules;
 public interface ICustomerModule
 {
     Task<CustomerDto?> Get(int customerId);
-    Task<CustomerModificationResult> Update(int id, CustomerModification newDetails);
-    Task<CustomerModificationResult> Delete(int customerId);
+    Task<CustomerModificationResult> Update(int id, CustomerModificationDto newDetails);
 }
 
 public interface ICustomerAdminModule
 {
-    Task<CustomerModificationResult> Create(CustomerModification details);
+    Task<CustomerModificationResult> Create(CustomerModificationDto details);
     IAsyncEnumerable<CustomerDto> GetAll();
     Task<bool> Exists(int customerId);
+    Task<CustomerModificationResult> Delete(int customerId);
 }
 
 public class CustomerModule(IRepository<Customer> customerRepository) : ICustomerModule, ICustomerAdminModule
@@ -52,7 +52,7 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
         return new CustomerDto(customer);
     }
 
-    public async Task<CustomerModificationResult> Update(int id, CustomerModification newDetails)
+    public async Task<CustomerModificationResult> Update(int id, CustomerModificationDto newDetails)
     {
         var existing = await _customerRepository
             .GetQueryable()
@@ -63,8 +63,13 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
             return new CustomerModificationResult(false, [CustomerModificationError.NotFound]);
         }
 
+        if (newDetails.DailyLimit < 0)
+        {
+            return new CustomerModificationResult(false, [CustomerModificationError.InvalidDailyLimit]);
+        }
+
         // Copy across the fields a customer should be able to update about themselves
-        existing.Name = newDetails.Name ?? existing.Name;
+        existing.Name = newDetails.Name ?? existing.Name; // TODO raise internal alert about name changes too. No secret identities here!
         existing.DailyLimit = newDetails.DailyLimit ?? existing.DailyLimit;
         if (newDetails.DateOfBirth != null)
         {
@@ -76,7 +81,7 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
         return new CustomerModificationResult(true, null, new CustomerDto(existing));
     }
 
-    public async Task<CustomerModificationResult> Create(CustomerModification details)
+    public async Task<CustomerModificationResult> Create(CustomerModificationDto details)
     {
         var errors = new List<CustomerModificationError>();
         if (String.IsNullOrWhiteSpace(details.Name))
@@ -87,6 +92,11 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
         if (details.DateOfBirth is null)
         {
             errors.Add(CustomerModificationError.InvalidDateOfBirth);
+        }
+
+        if (details.DailyLimit < 0)
+        {
+            errors.Add(CustomerModificationError.InvalidDailyLimit);
         }
 
         if (errors.Any())
@@ -104,7 +114,7 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
         var created = await _customerRepository.AddAsync(customer);
         await _customerRepository.SaveChangesAsync();
 
-        // Re-fetch so retrieving customer details always goes through a single codepath (Also ensures any EF behind the scenes magic gets picked up)
+        // Re-fetch so retrieving customer details always goes through a single code-path (Also ensures any EF behind the scenes magic gets picked up)
         var createdCustomer = await Get(created.Id);
         if (createdCustomer is null)
         {
@@ -136,11 +146,12 @@ public enum CustomerModificationError
     NotFound,
     InvalidName,
     InvalidDateOfBirth,
+    InvalidDailyLimit,
 
 };
-public record CustomerModificationResult(bool Success, CustomerModificationError[]? Errors = null, CustomerDto? Result = null);
+public record CustomerModificationResult(bool Success, CustomerModificationError[]? Errors = null, CustomerDto? Customer = null);
 
-public record CustomerModification(string? Name, DateOnly? DateOfBirth, decimal? DailyLimit);
+public record CustomerModificationDto(string? Name, DateOnly? DateOfBirth, decimal? DailyLimit);
 
 public record CustomerDto(int Id, string Name, DateOnly DateOfBirth, decimal DailyLimit)
 {
