@@ -41,6 +41,13 @@ public class CustomerModule(IRepository<Customer> customerRepository) : ICustome
         {
             return new CustomerModificationResult(false, [CustomerModificationError.InvalidDailyLimit]);
         }
+        
+        // ASSUMPTION: We do not deal with immortals. I'm sure a bank has a limit, but for the tech test we'll arbitrarily pick 120
+        if (newDetails.DateOfBirth != null &&
+            newDetails.DateOfBirth < DateOnly.FromDateTime(DateTime.Now.AddYears(-120)))
+        {
+            return new CustomerModificationResult(false, [CustomerModificationError.InvalidDateOfBirth]);
+        }
 
         // Copy across the fields a customer should be able to update about themselves
         existing.Name = newDetails.Name ?? existing.Name; // TODO raise internal alert about name changes too. No secret identities here!
@@ -62,7 +69,6 @@ public enum CustomerModificationError
     InvalidName,
     InvalidDateOfBirth,
     InvalidDailyLimit,
-    InvalidInitialBalance,
-
+    InvalidInitialBalance
 };
 public record CustomerModificationResult(bool Success, CustomerModificationError[]? Errors = null, CustomerDto? Customer = null);

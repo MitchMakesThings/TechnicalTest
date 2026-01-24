@@ -12,7 +12,7 @@ namespace TechnicalTest.Tests;
 public class CustomerAdminModuleTests : IDisposable
 {
     private readonly ApplicationContext _context;
-    private readonly CustomerAdminModule _customerAdminModule;
+    private readonly ICustomerAdminModule _customerAdminModule;
     private readonly SqliteConnection _connection;
 
     public CustomerAdminModuleTests()
