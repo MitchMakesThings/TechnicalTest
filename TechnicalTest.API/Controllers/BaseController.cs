@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TechnicalTest.API.Authentication;
+using TechnicalTest.API.DTOs;
 
 namespace TechnicalTest.API.Controllers;
 
@@ -17,5 +18,15 @@ public class BaseController : ControllerBase
         if (int.TryParse(claim.Value, out var id)) return id;
 
         return null;
+    }
+    
+    public ActionResult<ApiResponse<T>> ToApiResponse<T>(T data)
+    {
+        return Ok(new ApiResponse<T>(true, data));
+    }
+    
+    public ActionResult<ApiResponse<T>> ToApiErrorResponse<T>(string message, int statusCode = 400, IEnumerable<int>? errorCodes = null)
+    {
+        return StatusCode(statusCode, new ApiResponse<T>(false, default, message, errorCodes));
     }
 }

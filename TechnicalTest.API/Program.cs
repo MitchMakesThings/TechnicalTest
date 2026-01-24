@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using TechnicalTest.API;
 using TechnicalTest.API.Authentication;
 using TechnicalTest.Data;
 
@@ -28,6 +29,9 @@ builder.Services
             [new OpenApiSecuritySchemeReference("bearer", document)] = []
         });
     });
+
+// Introduce a very generic error handler, to return our response structure 500
+builder.Services.AddExceptionHandler<ExceptionHandlerMiddleware>();
 
 builder.Services.AddDbContext<ApplicationContext>();
 builder.Services.AddTechnicalTestDataServices();
@@ -67,8 +71,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Introduce a very generic error handler, to return ProblemDetails on a 500
-app.UseExceptionHandler(exceptionHandler => exceptionHandler.Run(async context => await Results.Problem().ExecuteAsync(context)));
+// For reasons I have not investigated, an action _must_ be provided to UseExceptionHandler(), but it doesn't need to actually do anything..
+app.UseExceptionHandler(_ => { });
 
 using (var scope = app.Services.CreateScope())
 {
