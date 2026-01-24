@@ -62,6 +62,7 @@ public enum CustomerModificationError
     InvalidName,
     InvalidDateOfBirth,
     InvalidDailyLimit,
+    InvalidInitialBalance,
 
 };
 public record CustomerModificationResult(bool Success, CustomerModificationError[]? Errors = null, CustomerDto? Customer = null);

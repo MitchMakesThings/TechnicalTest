@@ -37,6 +37,11 @@ public class CustomerAdminModule(
             errors.Add(CustomerModificationError.InvalidDailyLimit);
         }
 
+        if (details.InitialBalance < 0)
+        {
+            errors.Add(CustomerModificationError.InvalidInitialBalance);
+        }
+
         if (errors.Any())
         {
             return new CustomerModificationResult(false, errors.ToArray());
