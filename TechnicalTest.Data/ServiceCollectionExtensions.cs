@@ -19,7 +19,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICustomerModule, CustomerModule>()
             .AddScoped<ICustomerAdminModule, CustomerAdminModule>()
             .AddScoped<IBankAccountModule, BankAccountModule>()
-            .AddScoped<IBankAccountAdminModule, BankAccountAdminModule>();
+            .AddScoped<IBankAccountAdminModule, BankAccountAdminModule>()
+            .AddScoped<ITransactionModule, TransactionModule>();
         
         return services;
     }
