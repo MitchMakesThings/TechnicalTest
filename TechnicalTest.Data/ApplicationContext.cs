@@ -5,13 +5,24 @@ namespace TechnicalTest.Data;
 
 public class ApplicationContext : DbContext
 {
+    public ApplicationContext()
+    {
+    }
+
+    public ApplicationContext(DbContextOptions<ApplicationContext> options) : base(options)
+    {
+    }
+
     public DbSet<Customer> Customers { get; set; } = null!;
     public DbSet<BankAccount> BankAccounts { get; set; } = null!;
     public DbSet<Transaction> Transactions { get; set; } = null!;
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseSqlite("Data Source=bin\\database.db;");
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlite("Data Source=bin\\database.db;");
+        }
         base.OnConfiguring(optionsBuilder);
     }
 
