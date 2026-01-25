@@ -51,7 +51,7 @@ public class ApplicationContext : DbContext
 
             if (Database.IsSqlite())
             {
-                // TODO replace SQLite with a suitable database server ASAP! Until then, here's some workarounds for it's limitations
+                // ASSUMPTION: We would replace SQLite with a suitable database server ASAP! Until then, here's some workarounds for its limitations
                 // Interestingly, migrations built against SQLite don't automagically populate the default value like they would against MSSQL/Postrgres
                 // So we'll manually set the default value here.
                 modelBuilder.Entity(entityType.ClrType)
@@ -87,7 +87,7 @@ public class ApplicationContext : DbContext
             if (entry.Entity is BaseEntity baseEntity)
             {
                 baseEntity.UpdatedAt = DateTimeOffset.UtcNow;
-                // TODO I guess in a banking type context we'd log audit entries incl. user who made the change etc, so this would be quite different
+                // TODO I guess in a banking type context we'd log audit entries including the user who made the change etc, so this would be quite different
             }
         }
     }

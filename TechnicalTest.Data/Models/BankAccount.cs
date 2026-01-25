@@ -1,10 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace TechnicalTest.Data.Models;
+﻿namespace TechnicalTest.Data.Models;
 
 public class BankAccount : BaseEntity
 {
-    // TODO should have a length limit of some sort.
+    // ASSUMPTION: spec should have a length limit of some sort. Leaving it out for the tech test
     // eg, [MaxLength(20)] and the migration to apply it
     public required string AccountNumber { get; init; }
     
