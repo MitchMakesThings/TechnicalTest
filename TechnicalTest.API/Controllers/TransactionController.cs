@@ -19,10 +19,12 @@ public class TransactionController(ITransactionModule transactionModule) : BaseC
     public async Task<ActionResult<ApiResponse<TransactionDto>>> Create(TransactionCreationDto newTransaction)
     {
         var result = await transactionModule.Create(
+            CustomerId,
             newTransaction.DebitAccountId,
             newTransaction.CreditAccountId,
             newTransaction.Amount,
-            newTransaction.Reference);
+            newTransaction.Reference
+        );
 
         if (!result.Success)
         {

@@ -10,6 +10,7 @@ public interface ITransactionModule
     Task<IEnumerable<TransactionDto>> GetTransactions(int bankAccountId);
 
     Task<TransactionModificationResult> Create(
+        int customerId,
         int debitBankAccountId,
         int creditBankAccountId,
         decimal amount,
@@ -30,6 +31,7 @@ public class TransactionModule(IRepository<Transaction> transactionRepo, IReposi
     }
 
     public async Task<TransactionModificationResult> Create(
+        int customerId,
         int debitBankAccountId,
         int creditBankAccountId,
         decimal amount,
@@ -67,7 +69,7 @@ public class TransactionModule(IRepository<Transaction> transactionRepo, IReposi
         var debitAccount = accounts.FirstOrDefault(a => a.Id == debitBankAccountId);
         var creditAccount =  accounts.FirstOrDefault(a => a.Id == creditBankAccountId);
 
-        if (debitAccount is null)
+        if (debitAccount is null || debitAccount.CustomerId != customerId)
         {
             errors.Add(TransactionModificationError.DebitAccountNotFound);
         } else if (debitAccount.FrozenAt is not null)

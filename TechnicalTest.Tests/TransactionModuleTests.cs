@@ -82,8 +82,8 @@ public class TransactionModuleTests : IDisposable
     public async Task Create_ShouldReturnInvalidAmount_WhenAmountIsZeroOrNegative()
     {
         // Act
-        var resultZero = await _transactionModule.Create(1, 2, 0, "Test");
-        var resultNegative = await _transactionModule.Create(1, 2, -10, "Test");
+        var resultZero = await _transactionModule.Create(1, 1, 2, 0, "Test");
+        var resultNegative = await _transactionModule.Create(1, 1, 2, -10, "Test");
 
         // Assert
         Assert.False(resultZero.Success);
@@ -96,7 +96,7 @@ public class TransactionModuleTests : IDisposable
     public async Task Create_ShouldReturnInvalidAccounts_WhenAccountsAreSame()
     {
         // Act
-        var result = await _transactionModule.Create(1, 1, 100, "Test");
+        var result = await _transactionModule.Create(1, 1, 1, 100, "Test");
 
         // Assert
         Assert.False(result.Success);
@@ -107,7 +107,7 @@ public class TransactionModuleTests : IDisposable
     public async Task Create_ShouldReturnNotFound_WhenAccountsDoNotExist()
     {
         // Act
-        var result = await _transactionModule.Create(998, 999, 100, "Test");
+        var result = await _transactionModule.Create(1, 998, 999, 100, "Test");
 
         // Assert
         Assert.False(result.Success);
@@ -126,7 +126,7 @@ public class TransactionModuleTests : IDisposable
         var account2 = await CreateAccount(customer.Id, "22222222222", 1000);
 
         // Act
-        var result = await _transactionModule.Create(account1.Id, account2.Id, 100, "Test");
+        var result = await _transactionModule.Create(customer.Id, account1.Id, account2.Id, 100, "Test");
 
         // Assert
         Assert.False(result.Success);
@@ -142,7 +142,7 @@ public class TransactionModuleTests : IDisposable
         var account2 = await CreateAccount(customer.Id, "22222222222", 1000);
 
         // Act
-        var result = await _transactionModule.Create(account1.Id, account2.Id, 150, "Test");
+        var result = await _transactionModule.Create(customer.Id, account1.Id, account2.Id, 150, "Test");
 
         // Assert
         Assert.False(result.Success);
@@ -162,7 +162,7 @@ public class TransactionModuleTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act - try to send another 100 (total 250 > 200)
-        var result = await _transactionModule.Create(account1.Id, account2.Id, 100, "Test");
+        var result = await _transactionModule.Create(customer.Id, account1.Id, account2.Id, 100, "Test");
 
         // Assert
         Assert.False(result.Success);
@@ -178,7 +178,7 @@ public class TransactionModuleTests : IDisposable
         var account2 = await CreateAccount(customer.Id, "22222222222", 1000);
 
         // Act
-        var result = await _transactionModule.Create(account1.Id, account2.Id, 100, "Test");
+        var result = await _transactionModule.Create(customer.Id, account1.Id, account2.Id, 100, "Test");
 
         // Assert
         Assert.False(result.Success);
@@ -194,7 +194,7 @@ public class TransactionModuleTests : IDisposable
         var account2 = await CreateAccount(customer.Id, "22222222222", 1000, frozenAt: DateTimeOffset.UtcNow);
 
         // Act
-        var result = await _transactionModule.Create(account1.Id, account2.Id, 100, "Test");
+        var result = await _transactionModule.Create(customer.Id, account1.Id, account2.Id, 100, "Test");
 
         // Assert
         Assert.False(result.Success);
@@ -209,7 +209,7 @@ public class TransactionModuleTests : IDisposable
         var account2 = await CreateAccount(customer.Id, "22222222222", 1000);
 
         // Act
-        var result = await _transactionModule.Create(999, account2.Id, 100, "Test");
+        var result = await _transactionModule.Create(customer.Id, 999, account2.Id, 100, "Test");
 
         // Assert
         Assert.False(result.Success);
@@ -224,11 +224,28 @@ public class TransactionModuleTests : IDisposable
         var account1 = await CreateAccount(customer.Id, "11111111111", 1000);
 
         // Act
-        var result = await _transactionModule.Create(account1.Id, 999, 100, "Test");
+        var result = await _transactionModule.Create(customer.Id, account1.Id, 999, 100, "Test");
 
         // Assert
         Assert.False(result.Success);
         Assert.Contains(TransactionModificationError.CreditAccountNotFound, result.Errors!);
+    }
+
+    [Fact]
+    public async Task Create_ShouldReturnNotFound_WhenDebitAccountDoesNotBelongToCustomer()
+    {
+        // Arrange
+        var customer1 = await CreateCustomer("Customer 1");
+        var customer2 = await CreateCustomer("Customer 2");
+        var accountFromCustomer2 = await CreateAccount(customer2.Id, "22222222222", 1000);
+        var someOtherAccount = await CreateAccount(customer1.Id, "11111111111", 1000);
+
+        // Act - Customer 1 tries to use Customer 2's account as debit
+        var result = await _transactionModule.Create(customer1.Id, accountFromCustomer2.Id, someOtherAccount.Id, 100, "Test");
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Contains(TransactionModificationError.DebitAccountNotFound, result.Errors!);
     }
 
     [Fact]
@@ -240,7 +257,7 @@ public class TransactionModuleTests : IDisposable
         var account2 = await CreateAccount(customer.Id, "22222222222", 1000);
 
         // Act
-        var result = await _transactionModule.Create(account1.Id, account2.Id, 100, "Payment");
+        var result = await _transactionModule.Create(customer.Id, account1.Id, account2.Id, 100, "Payment");
 
         // Assert
         Assert.True(result.Success);
