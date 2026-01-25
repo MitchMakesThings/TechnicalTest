@@ -7,7 +7,7 @@ namespace TechnicalTest.Data.Modules;
 
 public interface ITransactionModule
 {
-    Task<IEnumerable<TransactionDto>> GetTransactions(int bankAccountId);
+    Task<IEnumerable<TransactionDto>> GetTransactions(int customerId, int bankAccountId);
 
     Task<TransactionModificationResult> Create(
         int customerId,
@@ -19,8 +19,14 @@ public interface ITransactionModule
 
 public class TransactionModule(IRepository<Transaction> transactionRepo, IRepository<BankAccount> accountRepo) : ITransactionModule
 {
-    public async Task<IEnumerable<TransactionDto>> GetTransactions(int bankAccountId)
+    public async Task<IEnumerable<TransactionDto>> GetTransactions(int customerId, int bankAccountId)
     {
+        var account = await accountRepo.GetQueryable().SingleOrDefaultAsync(a => a.Id == bankAccountId);
+        if (account == null || account.CustomerId != customerId)
+        {
+            throw new KeyNotFoundException("Account not found");
+        }
+
         return await transactionRepo
             .GetQueryable()
             .Include(transaction => transaction.DebitBankAccount)

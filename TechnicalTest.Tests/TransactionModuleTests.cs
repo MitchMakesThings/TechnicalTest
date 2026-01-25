@@ -70,12 +70,32 @@ public class TransactionModuleTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = (await _transactionModule.GetTransactions(account1.Id)).ToList();
+        var result = (await _transactionModule.GetTransactions(customer.Id, account1.Id)).ToList();
 
         // Assert
         Assert.Equal(2, result.Count);
         Assert.Contains(result, t => t.Reference == "T1");
         Assert.Contains(result, t => t.Reference == "T2");
+    }
+
+    [Fact]
+    public async Task GetTransactions_ShouldReturnEmpty_WhenAccountDoesNotBelongToCustomer()
+    {
+        // Arrange
+        var customer1 = await CreateCustomer("Customer 1");
+        var customer2 = await CreateCustomer("Customer 2");
+        var account1 = await CreateAccount(customer1.Id, "11111111111", 1000);
+        var account2 = await CreateAccount(customer2.Id, "22222222222", 1000);
+        
+        var t1 = new Transaction { DebitBankAccountId = account1.Id, CreditBankAccountId = account2.Id, Amount = 100, Reference = "T1" };
+        _context.Transactions.Add(t1);
+        await _context.SaveChangesAsync();
+
+        // Act - Customer 2 tries to get transactions for Customer 1's account
+        var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => _transactionModule.GetTransactions(customer2.Id, account1.Id));
+
+        // Assert
+        Assert.Equal("Account not found", exception.Message);
     }
 
     [Fact]

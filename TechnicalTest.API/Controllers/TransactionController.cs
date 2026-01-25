@@ -12,7 +12,14 @@ public class TransactionController(ITransactionModule transactionModule) : BaseC
     [HttpGet("{accountId:int}")]
     public async Task<ActionResult<ApiResponse<IEnumerable<TransactionDto>>>> GetTransactions(int accountId)
     {
-        return ToApiResponse(await transactionModule.GetTransactions(accountId));
+        try
+        {
+            return ToApiResponse(await transactionModule.GetTransactions(CustomerId, accountId));
+        }
+        catch (KeyNotFoundException)
+        {
+            return ToApiErrorResponse<IEnumerable<TransactionDto>>("Account not found");
+        }
     }
 
     [HttpPost]
