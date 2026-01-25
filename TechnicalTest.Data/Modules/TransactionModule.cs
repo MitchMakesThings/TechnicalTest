@@ -113,6 +113,11 @@ public class TransactionModule(IRepository<Transaction> transactionRepo, IReposi
             Amount = amount,
             Reference = reference
         });
+
+        // And decrement the account balance!
+        debitAccount.Balance -= amount;
+        
+        // Note that because the repo is calling the context SaveChangesAsync, we only need to save one repo for it to also save the account
         await transactionRepo.SaveChangesAsync();
 
         return new TransactionModificationResult(true, Transaction: new TransactionDto(newTransaction));

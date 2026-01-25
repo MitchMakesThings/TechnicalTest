@@ -273,4 +273,26 @@ public class TransactionModuleTests : IDisposable
         Assert.Equal(account2.Id, transactionInDb.CreditBankAccountId);
         Assert.Equal(100, transactionInDb.Amount);
     }
+
+    [Fact]
+    public async Task Create_ShouldDecrementDebitAccountBalance_WhenSucceeds()
+    {
+        // Arrange
+        var customer = await CreateCustomer();
+        var initialBalance = 1000m;
+        var transactionAmount = 100m;
+        var debitAccount = await CreateAccount(customer.Id, "11111111111", initialBalance);
+        var creditAccount = await CreateAccount(customer.Id, "22222222222", 500m);
+
+        // Act
+        var result = await _transactionModule.Create(customer.Id, debitAccount.Id, creditAccount.Id, transactionAmount, "Decrease Balance Test");
+
+        // Assert
+        Assert.True(result.Success);
+
+        // Reload debit account from DB to check balance
+        var updatedDebitAccount = await _context.BankAccounts.FindAsync(debitAccount.Id);
+        Assert.NotNull(updatedDebitAccount);
+        Assert.Equal(initialBalance - transactionAmount, updatedDebitAccount.Balance);
+    }
 }
