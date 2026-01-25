@@ -131,11 +131,19 @@ public class TransactionModule(IRepository<Transaction> transactionRepo, IReposi
 
     private async Task<Decimal> SumDailyTransactions(int customerId)
     {
-        return await accountRepo
+        var oneDayAgo = DateTimeOffset.UtcNow.AddDays(-1);
+        
+        var accounts = accountRepo.GetQueryable().Where(a => a.CustomerId == customerId);
+
+        var recentTransactions = transactionRepo
             .GetQueryable()
-            .Where(a => a.CustomerId == customerId)
-            .SelectMany(a => a.DebitTransactions)
-            .SumAsync(t => t.Amount);
+            .Join(accounts, t => t.DebitBankAccountId, a => a.Id, (transaction, account) => transaction)
+            // ASSUMPTION: This horrific! But SQLite doesn't handle DateTimeOffset like proper sql.
+            // This will do for the tech test, but obviously won't scale as the customers transactions grow
+            .AsEnumerable()
+            .Where(t => t.CreatedAt >= oneDayAgo);
+        
+        return recentTransactions.Sum(t => t.Amount);
     }
 }
 

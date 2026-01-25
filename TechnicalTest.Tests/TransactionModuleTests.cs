@@ -190,6 +190,32 @@ public class TransactionModuleTests : IDisposable
     }
 
     [Fact]
+    public async Task Create_ShouldSucceed_WhenExistingTransactionsAreMoreThan24HoursOld()
+    {
+        // Arrange
+        var customer = await CreateCustomer(dailyLimit: 200);
+        var account1 = await CreateAccount(customer.Id, "11111111111", 1000);
+        var account2 = await CreateAccount(customer.Id, "22222222222", 1000);
+
+        // Existing transaction of 500 from 25 hours ago
+        _context.Transactions.Add(new Transaction
+        {
+            DebitBankAccountId = account1.Id,
+            CreditBankAccountId = account2.Id,
+            Amount = 500,
+            CreatedAt = DateTimeOffset.UtcNow.AddHours(-25)
+        });
+        await _context.SaveChangesAsync();
+
+        // Act - try to send 100 (limit is 200, total old is 500, but they should be ignored)
+        var result = await _transactionModule.Create(customer.Id, account1.Id, account2.Id, 100, "Test");
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Null(result.Errors);
+    }
+
+    [Fact]
     public async Task Create_ShouldReturnFrozen_WhenDebitAccountIsFrozen()
     {
         // Arrange
