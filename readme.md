@@ -4,6 +4,8 @@ This is my submissino for the tech test. Original instructions are in `readme.in
 
 In addition to the code itself, I tried to do regular fairly-small commits. These could be reviewed to get an idea of how I approached the project.
 
+Obviously there are many things that could be improved, but I'm reasonably happy with the time/functionality trade-off.
+
 ### Core assumptions
 1. From the mention of a mobile app, I've assumed this API is primarily intended for a customer-facing app. Additional admin(bank staff)-specific endpoints have been added for non-customer behaviour (creating new customers, generating auth tokens etc) to assist with testing.
 1. Account management & authentication is out of scope. It's assumed there would be a service authenticating users and producing a JWT the mobile app would send as part of a Bearer authentication header. \
@@ -45,7 +47,7 @@ Tests have been added in their own project. If I'd had time for the api tests I'
 ### Tests
 While the technical test itself has been written by hand, I wanted an excuse to trial AI so I had Jetbrains Junie write the unit test project. So most of the tests are AI generated, with small manual tweaks.
 
-I am moderately impressed. It did a reasonable job of testing functionality as implemented, but obviously didn't do any thinking about additional edge cases. See the last few commits for examples of what occurred to me while reviewing the generated tests (one of which was a real doozy!)
+I am moderately impressed. It did a reasonable job of testing functionality as implemented, but obviously didn't do any thinking about additional edge cases. See the last few commits for examples of what occurred to me while reviewing the generated tests. AI definitely won't be taking over QA any time soon.
 
 Since the technical test is also using SQLite, the tests are running with an in-memory SQLite database. However on a larger scale project I would expect to use something like TestContainers to spin up an appropriate (MSSql/Postgres etc) database.
 
