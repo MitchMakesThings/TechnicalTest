@@ -23,10 +23,10 @@ public class AccountsController(IBankAccountModule accountModule) : BaseControll
         {
             if (result.Errors?.Contains(BankAccountModificationError.NoAccountsAvailable) == true)
             {
-                return ToApiErrorResponse<AccountDto?>("No accounts available", StatusCodes.Status404NotFound, result.Errors.Select(e => (int)e));
+                return ToApiErrorResponse<AccountDto?>("No accounts available", StatusCodes.Status404NotFound, result.Errors.Select(e => e.ToString()));
             }
 
-            return ToApiErrorResponse<AccountDto?>("An unknown error occurred.", StatusCodes.Status500InternalServerError, result.Errors?.Select(e => (int)e));
+            return ToApiErrorResponse<AccountDto?>("An unknown error occurred.", StatusCodes.Status500InternalServerError, result.Errors?.Select(e => e.ToString()));
         }
 
         return ToApiResponse(result.Account);
@@ -43,7 +43,7 @@ public class AccountsController(IBankAccountModule accountModule) : BaseControll
                 return ToApiErrorResponse<AccountDto>("Not found", StatusCodes.Status404NotFound);
             }
             
-            return ToApiErrorResponse<AccountDto>("An unknown error occurred", StatusCodes.Status500InternalServerError, result.Errors?.Select(e => (int)e));
+            return ToApiErrorResponse<AccountDto>("An unknown error occurred", StatusCodes.Status500InternalServerError, result.Errors?.Select(e => e.ToString()));
         }
 
         return ToApiResponse(result.Account!);
@@ -57,20 +57,20 @@ public class AccountsController(IBankAccountModule accountModule) : BaseControll
         {
             if (result.Errors?.Contains(BankAccountModificationError.NotFound) == true)
             {
-                return ToApiErrorResponse<bool>("Not found", StatusCodes.Status404NotFound,  result.Errors.Select(e => (int)e));
+                return ToApiErrorResponse<bool>("Not found", StatusCodes.Status404NotFound,  result.Errors.Select(e => e.ToString()));
             }
 
             if (result.Errors?.Contains(BankAccountModificationError.AccountFrozen) == true)
             {
-                return ToApiErrorResponse<bool>("Cannot delete a frozen account", StatusCodes.Status400BadRequest,  result.Errors.Select(e => (int)e));
+                return ToApiErrorResponse<bool>("Cannot delete a frozen account", StatusCodes.Status400BadRequest,  result.Errors.Select(e => e.ToString()));
             }
 
             if (result.Errors?.Contains(BankAccountModificationError.InvalidBalance) == true)
             {
-                return ToApiErrorResponse<bool>("Cannot delete accounts with a non-zero balance", StatusCodes.Status400BadRequest,  result.Errors.Select(e => (int)e));
+                return ToApiErrorResponse<bool>("Cannot delete accounts with a non-zero balance", StatusCodes.Status400BadRequest,  result.Errors.Select(e => e.ToString()));
             }
             
-            return ToApiErrorResponse<bool>("An unknown error occurred", StatusCodes.Status500InternalServerError, result.Errors?.Select(e => (int)e));
+            return ToApiErrorResponse<bool>("An unknown error occurred", StatusCodes.Status500InternalServerError, result.Errors?.Select(e => e.ToString()));
         }
 
         return ToApiResponse(true);

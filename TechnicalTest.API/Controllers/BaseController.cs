@@ -25,7 +25,7 @@ public class BaseController : ControllerBase
         return Ok(new ApiResponse<T>(true, data));
     }
     
-    public ActionResult<ApiResponse<T>> ToApiErrorResponse<T>(string message, int statusCode = 400, IEnumerable<int>? errorCodes = null)
+    public ActionResult<ApiResponse<T>> ToApiErrorResponse<T>(string message, int statusCode = 400, IEnumerable<string>? errorCodes = null)
     {
         return StatusCode(statusCode, new ApiResponse<T>(false, default, message, errorCodes));
     }

@@ -35,7 +35,7 @@ public class TransactionController(ITransactionModule transactionModule) : BaseC
 
         if (!result.Success)
         {
-            return ToApiErrorResponse<TransactionDto>("Invalid request", errorCodes: result.Errors?.Select(e => (int)e));
+            return ToApiErrorResponse<TransactionDto>("Invalid request", errorCodes: result.Errors?.Select(e => e.ToString()));
         }
         
         return ToApiResponse(result.Transaction!);

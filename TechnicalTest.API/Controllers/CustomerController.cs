@@ -35,7 +35,7 @@ public class CustomerController(ICustomerModule customerModule) : BaseController
             return ToApiErrorResponse<CustomerDto>(
                 "An error occurred while updating the customer",
                 StatusCodes.Status400BadRequest,
-                result.Errors?.Select(e => (int)e)
+                result.Errors?.Select(e => e.ToString())
             );
         }
 

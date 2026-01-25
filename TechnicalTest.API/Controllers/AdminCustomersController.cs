@@ -35,7 +35,7 @@ public class AdminCustomersController(ICustomerAdminModule customerModule, Admin
             userFriendlyMessage += created.Errors?.Contains(CustomerModificationError.InvalidName) == true ? "Invalid name." : string.Empty;
             userFriendlyMessage += created.Errors?.Contains(CustomerModificationError.InvalidDateOfBirth) == true ? "Invalid date of birth." : string.Empty;
         
-            return BadRequest(new ApiResponse<CustomerDto>(false, null, userFriendlyMessage, created.Errors?.Select(e => (int)e)));
+            return BadRequest(new ApiResponse<CustomerDto>(false, null, userFriendlyMessage, created.Errors?.Select(e => e.ToString())));
         }
         
         return Ok(new ApiResponse<CustomerDto>(true, created.Customer!));
@@ -51,7 +51,7 @@ public class AdminCustomersController(ICustomerAdminModule customerModule, Admin
             {
                 return NotFound(new ApiResponse<bool>(false, false));
             }
-            return BadRequest(new ApiResponse<bool>(false, false, "Failed to delete customer",  result.Errors?.Select(e => (int)e)));
+            return BadRequest(new ApiResponse<bool>(false, false, "Failed to delete customer",  result.Errors?.Select(e => e.ToString())));
         }
 
         return Ok(new ApiResponse<bool>(true, true));
